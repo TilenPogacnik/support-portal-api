@@ -32,3 +32,23 @@ curl -u alex:operator123 http://localhost:8080/conversations
 curl -u lisa:operator123 -X POST http://localhost:8080/conversations/2/takeover \
   -H "Content-Type: application/json" \
   -d '{"operatorId": 6}'
+
+
+
+
+  curl -v -X POST http://localhost:8080/conversations \
+  -H "Content-Type: application/json" \
+  -u john:password123 \
+  -d '{
+    "topic": "SERVICES",
+    "initialMessage": " "
+  }'
+
+
+    curl -v -X POST http://localhost:8080/conversations \
+  -H "Content-Type: application/json" \
+  -u john:password123 \
+  -d '{
+    "topic": "SERVICES",
+    "initialMessage": "test"
+  }'

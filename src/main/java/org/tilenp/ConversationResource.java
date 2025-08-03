@@ -6,6 +6,9 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+
+import org.tilenp.exception.BadRequestException;
+
 import org.tilenp.dto.ConversationDTO;
 import org.tilenp.dto.CreateConversationDTO;
 import org.tilenp.dto.CreateMessageDTO;
@@ -15,6 +18,7 @@ import org.tilenp.entities.Message;
 import org.tilenp.entities.User;
 import org.tilenp.enums.ConversationStatus;
 import org.tilenp.enums.UserRole;
+import org.tilenp.exception.ErrorMessages;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -65,36 +69,36 @@ public class ConversationResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{id}")
     @PermitAll
-    public ConversationDTO getConversation(@PathParam("id") Long conversationId){
+    public ConversationDTO getConversation(@PathParam("id") Long conversationId) {
         User user = currentUser.get();
 
         Conversation conversation = Conversation.findById(conversationId);
         if (conversation == null) {
-            return null; // TODO: Consider throwing a proper 404 exception - test with invalid id, exception is thrown earlier
+            throw new NotFoundException(String.format(ErrorMessages.CONVERSATION_NOT_FOUND, conversationId));
         }
 
-        //Users can only view their own conversations, operators can view all conversations
+        // Users can only view their own conversations, operators can view all conversations
         if (UserRole.USER.equals(user.userRole) && !conversation.customer.equals(user)) {
-            throw new NotAuthorizedException("User is not authorized to view this conversation");
+            throw new NotAuthorizedException(ErrorMessages.UNAUTHORIZED_VIEW_CONVERSATION);
         }
 
-        return ConversationDTO.fromEntity(conversation); //TODO: include messages
+        return ConversationDTO.fromEntity(conversation); // TODO: include messages
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{id}/messages")
     @PermitAll
-    public List<MessageDTO> getConversationMessages(@PathParam("id") Long conversationId){
+    public List<MessageDTO> getConversationMessages(@PathParam("id") Long conversationId) {
         User user = currentUser.get();
         Conversation conversation = Conversation.findById(conversationId);
         if (conversation == null) {
-            return null; // TODO: Consider throwing a proper 404 exception - test with invalid id, exception is thrown earlier
+            throw new NotFoundException(String.format(ErrorMessages.CONVERSATION_NOT_FOUND, conversationId));
         }
 
-        //Users can only view their own conversations, operators can view all conversations
+        // Users can only view their own conversations, operators can view all conversations
         if (UserRole.USER.equals(user.userRole) && !conversation.customer.equals(user)) {
-            throw new NotAuthorizedException("User is not authorized to view this conversation");
+            throw new NotAuthorizedException(ErrorMessages.UNAUTHORIZED_VIEW_CONVERSATION);
         }
         
         return conversation.messages.stream()
@@ -108,24 +112,24 @@ public class ConversationResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{id}/messages") //TODO: cleanup order of annotations
     @PermitAll
-    public MessageDTO addMessageToConversation(@PathParam("id") Long conversationId, CreateMessageDTO createMessageDTO){
+    public MessageDTO addMessageToConversation(@PathParam("id") Long conversationId, CreateMessageDTO createMessageDTO) {
         User user = currentUser.get();
         
         validateCreateMessageDTO(createMessageDTO);
         
         Conversation conversation = Conversation.findById(conversationId);
         if (conversation == null) {
-            throw new IllegalArgumentException("Conversation not found with id: " + conversationId);
+            throw new NotFoundException(String.format(ErrorMessages.CONVERSATION_NOT_FOUND, conversationId));
         }
 
-        //Users can only send messages to their own conversations, operators can send messages to any conversation
+        // Users can only send messages to their own conversations, operators can send messages to any conversation
         if (UserRole.USER.equals(user.userRole) && !conversation.customer.equals(user)) {
-            throw new NotAuthorizedException("User is not authorized to send messages to this conversation");
+            throw new NotAuthorizedException(ErrorMessages.UNAUTHORIZED_SEND_MESSAGE);
         }
         
-        //We do not accept messages to completed conversations
+        // We do not accept messages to completed conversations
         if (conversation.status == ConversationStatus.CLOSED) {
-            throw new IllegalArgumentException("Cannot send messages to a completed conversation");
+            throw new BadRequestException(ErrorMessages.CANNOT_SEND_TO_COMPLETED_CONVERSATION);
         }
 
         Message message = new Message();
@@ -142,18 +146,20 @@ public class ConversationResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{id}/accept")
     @RolesAllowed(UserRole.OPERATOR)
-    public ConversationDTO acceptConversation(@PathParam("id") Long conversationId){
+    public ConversationDTO acceptConversation(@PathParam("id") Long conversationId) {
         User user = currentUser.get();
                 
         // Find the conversation
         Conversation conversation = Conversation.findById(conversationId);
         if (conversation == null) {
-            throw new IllegalArgumentException("Conversation not found with id: " + conversationId);
+            throw new NotFoundException(String.format(ErrorMessages.CONVERSATION_NOT_FOUND, conversationId));
         }
         
-        //Only waiting conversations can be accepted
+        // Only waiting conversations can be accepted
         if (conversation.status != ConversationStatus.WAITING) {
-            throw new IllegalArgumentException("Only waiting conversations can be accepted. Current status: " + conversation.status);
+            throw new BadRequestException(
+                String.format(ErrorMessages.ONLY_WAITING_CONVERSATIONS_CAN_BE_ACCEPTED, conversation.status)
+            );
         }
         
         conversation.operator = user;
@@ -169,21 +175,21 @@ public class ConversationResource {
     @Path("/{id}/close")
     @Produces(MediaType.APPLICATION_JSON)
     @PermitAll
-    public ConversationDTO closeConversation(@PathParam("id") Long conversationId){
+    public ConversationDTO closeConversation(@PathParam("id") Long conversationId) {
         User user = currentUser.get();
         Conversation conversation = Conversation.findById(conversationId);
         if (conversation == null) {
-            throw new IllegalArgumentException("Conversation not found with id: " + conversationId);
+            throw new NotFoundException(String.format(ErrorMessages.CONVERSATION_NOT_FOUND, conversationId));
         }
 
-        //Users can only close their own conversations. Operators can close any conversation.
+        // Users can only close their own conversations. Operators can close any conversation.
         if (UserRole.USER.equals(user.userRole) && !conversation.customer.equals(user)) {
-            throw new NotAuthorizedException("User is not authorized to close this conversation");
+            throw new NotAuthorizedException(ErrorMessages.UNAUTHORIZED_CLOSE_CONVERSATION);
         }
         
         // Completed conversations cannot be closed again
         if (conversation.status == ConversationStatus.CLOSED) {
-            throw new IllegalArgumentException("Conversation is already completed");
+            throw new BadRequestException(ErrorMessages.CONVERSATION_ALREADY_COMPLETED);
         }
 
         conversation.status = ConversationStatus.CLOSED; //TODO: closing timestamp
@@ -195,16 +201,16 @@ public class ConversationResource {
 
     private void validateCreateConversationDTO(CreateConversationDTO dto) {
         if (dto.topic() == null) {
-            throw new IllegalArgumentException("Topic is required");
+            throw new BadRequestException(ErrorMessages.TOPIC_REQUIRED);
         }
         if (dto.initialMessage() == null || dto.initialMessage().trim().isEmpty()) {
-            throw new IllegalArgumentException("Initial message is required and cannot be empty");
+            throw new BadRequestException(ErrorMessages.INITIAL_MESSAGE_REQUIRED);
         }
     }
 
     private void validateCreateMessageDTO(CreateMessageDTO dto) {
         if (dto.text() == null || dto.text().trim().isEmpty()) {
-            throw new IllegalArgumentException("Message text is required and cannot be empty");
+            throw new BadRequestException(ErrorMessages.MESSAGE_TEXT_REQUIRED);
         }
     }
 }
