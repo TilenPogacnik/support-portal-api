@@ -5,19 +5,13 @@ AUTHENTICATION:
 - Header: Authorization: Basic <base64(username:password)>
 - No authentication required for customer endpoints
 
-=== CUSTOMER ENDPOINTS (Mobile App) ===
+TODO
+- permissions for endpoints (which endpoints can be used as operator only?)
 
-1. POST /api/conversations
-   Purpose: Create new support conversation
-   Request: { "customerName": "string", "topic": "technical|services|chat", "message": "string" }
-   Response: { "conversationId": "string", "status": "pending", "timestamp": "ISO8601" }
-
-2. GET /api/conversations/{conversationId}
-   Purpose: Get conversation details and messages
-   Response: { "conversationId": "string", "topic": "string", "status": "pending|active|closed", "messages": [...] }
+=== ENDPOINTS ===
 
 3. POST /api/conversations/{conversationId}/messages
-   Purpose: Customer sends message in existing conversation
+   Purpose: Customer/operator sends message in existing conversation
    Request: { "message": "string" }
    Response: { "messageId": "string", "timestamp": "ISO8601" }
 
@@ -28,27 +22,24 @@ AUTHENTICATION:
 === OPERATOR ENDPOINTS (Web App) ===
 All require: Authorization: Basic <credentials>
 
-5. GET /api/operator/conversations
-   Purpose: Get all conversations (pending and active)
-   Query params: ?status=pending|active|all
-   Response: { "conversations": [{ "conversationId": "string", "customerName": "string", "topic": "string", "status": "string", "lastMessage": "string", "timestamp": "ISO8601", "assignedOperator": "string|null" }] }
-
 6. POST /api/operator/conversations/{conversationId}/takeover
    Purpose: Operator takes over pending conversation
    Response: { "success": true, "message": "Conversation assigned" }
 
-7. POST /api/operator/conversations/{conversationId}/messages
-   Purpose: Operator sends reply to customer
-   Request: { "message": "string" }
-   Response: { "messageId": "string", "timestamp": "ISO8601" }
-
-8. GET /api/operator/conversations/{conversationId}
-   Purpose: Get full conversation details for operator
-   Response: { "conversationId": "string", "customerName": "string", "topic": "string", "status": "string", "messages": [...], "assignedOperator": "string" }
-
-9. POST /api/operator/conversations/{conversationId}/close
+7. POST /api/conversations/{conversationId}/close
    Purpose: Close/resolve conversation
    Response: { "success": true, "message": "Conversation closed" }
+
+=== DONE ENDPOINTS ===
+1. POST /api/conversations 
+   Purpose: Create new support conversation
+   Request: { "customerName": "string", "topic": "technical|services|chat", "message": "string" }
+   Response: { "conversationId": "string", "status": "pending", "timestamp": "ISO8601" }
+
+2. GET /api/conversations/{conversationId}
+   Purpose: Get conversation details and messages
+   Response: { "conversationId": "string", "topic": "string", "status": "pending|active|closed", "messages": [...] }
+
 
 === STATUS/HEALTH ENDPOINTS ===
 

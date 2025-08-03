@@ -6,6 +6,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import java.util.List;
+
 @Entity
 @Table(name="messages")
 public class Message extends PanacheEntity {
@@ -17,4 +19,8 @@ public class Message extends PanacheEntity {
     @JoinColumn(name="author_id", nullable = false)
     public User author;
     public String text;
+
+    public static List<Message> findByConversationId(Long conversationId) {
+        return find("conversation.id", conversationId).list();
+    }
 }

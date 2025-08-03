@@ -5,6 +5,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import org.tilenp.dto.ConversationDTO;
 import org.tilenp.dto.CreateConversationDTO;
+import org.tilenp.dto.MessageDTO;
 import org.tilenp.entities.Conversation;
 import org.tilenp.entities.Message;
 import org.tilenp.entities.User;
@@ -21,14 +22,14 @@ public class ConversationResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public ConversationDTO createConversation(CreateConversationDTO createConversationDTO){
+        // Validate DTO
+        validateCreateConversationDTO(createConversationDTO);
+        
         // Find the customer //TODO: we probably dont need customer to already exist. this is a stretch goal
         User customer = User.findById(createConversationDTO.customerId);
         if (customer == null) {
             throw new IllegalArgumentException("Customer not found with id: " + createConversationDTO.customerId);
         }
-
-        // Validate DTO
-        validateCreateConversationDTO(createConversationDTO);
 
         // Create new conversation
         Conversation conversation = new Conversation();
@@ -68,6 +69,21 @@ public class ConversationResource {
         return toConversationDTO(conv);
     }
 
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/{id}/messages")
+    public List<MessageDTO> getConversationMessages(@PathParam("id") Long id){
+        Conversation conv = Conversation.findById(id);
+        if (conv == null) {
+            return null; // TODO: Consider throwing a proper 404 exception
+        }
+        
+        List<Message> messages = Message.findByConversationId(id);
+        return messages.stream()
+                .map(this::toMessageDTO)
+                .collect(Collectors.toList());
+    }
+
     private void validateCreateConversationDTO(CreateConversationDTO dto) {
         if (dto.customerId == null) {
             throw new IllegalArgumentException("Customer ID is required");
@@ -78,6 +94,16 @@ public class ConversationResource {
         if (dto.initialMessage == null || dto.initialMessage.trim().isEmpty()) {
             throw new IllegalArgumentException("Initial message is required and cannot be empty");
         }
+    }
+
+    private MessageDTO toMessageDTO(Message message) {
+        return new MessageDTO(
+                message.id,
+                message.conversation.id,
+                message.author.id,
+                message.author.name,
+                message.text
+        );
     }
 
     private ConversationDTO toConversationDTO(Conversation conv) {
