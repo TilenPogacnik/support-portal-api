@@ -1,7 +1,6 @@
 package org.tilenp;
 
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.annotation.security.PermitAll;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
@@ -52,23 +51,33 @@ public class ConversationResource {
         initialMessage.text = createConversationDTO.initialMessage();
         initialMessage.persist();
 
-        return ConversationDTO.fromEntity(conversation); //TODO: include messages
+        return ConversationDTO.fromEntity(conversation);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed(UserRole.OPERATOR) //TODO: permit all, if user return only their own conversations
+    @RolesAllowed({UserRole.OPERATOR, UserRole.USER})
     public List<ConversationDTO> getAllConversations(){ //TODO: add filters for status, operator, topic
-        List<Conversation> conversations = Conversation.listAll();
+        User user = currentUser.get();
+        List<Conversation> conversations;
+        
+        if (UserRole.USER.equals(user.userRole)) {
+            // Users can only see their own conversations
+            conversations = Conversation.list("customer", user);
+        } else {
+            // Operators can see all conversations
+            conversations = Conversation.listAll();
+        }
+        
         return conversations.stream()
                 .map(ConversationDTO::fromEntity)
-                .collect(Collectors.toList()); //TODO dont include messages
+                .collect(Collectors.toList());
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{id}")
-    @PermitAll
+    @RolesAllowed({UserRole.OPERATOR, UserRole.USER})
     public ConversationDTO getConversation(@PathParam("id") Long conversationId) {
         User user = currentUser.get();
 
@@ -82,13 +91,13 @@ public class ConversationResource {
             throw new NotAuthorizedException(ErrorMessages.UNAUTHORIZED_VIEW_CONVERSATION);
         }
 
-        return ConversationDTO.fromEntity(conversation); // TODO: include messages
+        return ConversationDTO.fromEntity(conversation);
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{id}/messages")
-    @PermitAll
+    @RolesAllowed({UserRole.OPERATOR, UserRole.USER})
     public List<MessageDTO> getConversationMessages(@PathParam("id") Long conversationId) {
         User user = currentUser.get();
         Conversation conversation = Conversation.findById(conversationId);
@@ -111,7 +120,7 @@ public class ConversationResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{id}/messages") //TODO: cleanup order of annotations
-    @PermitAll
+    @RolesAllowed({UserRole.OPERATOR, UserRole.USER})
     public MessageDTO addMessageToConversation(@PathParam("id") Long conversationId, CreateMessageDTO createMessageDTO) {
         User user = currentUser.get();
         
@@ -175,7 +184,7 @@ public class ConversationResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Path("/{id}/close")
     @Produces(MediaType.APPLICATION_JSON)
-    @PermitAll
+    @RolesAllowed({UserRole.OPERATOR, UserRole.USER})
     public ConversationDTO closeConversation(@PathParam("id") Long conversationId) {
         User user = currentUser.get();
         Conversation conversation = Conversation.findById(conversationId);
