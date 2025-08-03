@@ -7,10 +7,12 @@ import org.tilenp.dto.ConversationDTO;
 import org.tilenp.dto.CreateConversationDTO;
 import org.tilenp.dto.CreateMessageDTO;
 import org.tilenp.dto.MessageDTO;
+import org.tilenp.dto.TakeoverConversationDTO;
 import org.tilenp.entities.Conversation;
 import org.tilenp.entities.Message;
 import org.tilenp.entities.User;
 import org.tilenp.enums.ConversationStatus;
+import org.tilenp.enums.UserRole;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -121,6 +123,45 @@ public class ConversationResource {
         return toMessageDTO(message);
     }
 
+    @POST
+    @Transactional
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/{id}/takeover")
+    public ConversationDTO takeoverConversation(@PathParam("id") Long conversationId, TakeoverConversationDTO takeoverDTO){
+        // Validate DTO
+        validateTakeoverConversationDTO(takeoverDTO);
+        
+        // Find the conversation
+        Conversation conversation = Conversation.findById(conversationId);
+        if (conversation == null) {
+            throw new IllegalArgumentException("Conversation not found with id: " + conversationId);
+        }
+        
+        // Check if conversation is in WAITING status
+        if (conversation.status != ConversationStatus.WAITING) {
+            throw new IllegalArgumentException("Only waiting conversations can be taken over. Current status: " + conversation.status);
+        }
+        
+        // Find the operator
+        User operator = User.findById(takeoverDTO.operatorId);
+        if (operator == null) {
+            throw new IllegalArgumentException("Operator not found with id: " + takeoverDTO.operatorId);
+        }
+        
+        // Verify user is an operator
+        if (operator.userRole != UserRole.OPERATOR) {
+            throw new IllegalArgumentException("User is not an operator");
+        }
+        
+        // Assign operator and change status to TAKEN
+        conversation.operator = operator;
+        conversation.status = ConversationStatus.TAKEN;
+        conversation.persist();
+        
+        return toConversationDTO(conversation);
+    }
+
     private void validateCreateConversationDTO(CreateConversationDTO dto) {
         if (dto.customerId == null) {
             throw new IllegalArgumentException("Customer ID is required");
@@ -139,6 +180,12 @@ public class ConversationResource {
         }
         if (dto.text == null || dto.text.trim().isEmpty()) {
             throw new IllegalArgumentException("Message text is required and cannot be empty");
+        }
+    }
+
+    private void validateTakeoverConversationDTO(TakeoverConversationDTO dto) {
+        if (dto.operatorId == null) {
+            throw new IllegalArgumentException("Operator ID is required");
         }
     }
 
