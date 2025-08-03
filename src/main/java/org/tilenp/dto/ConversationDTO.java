@@ -8,17 +8,23 @@ public class ConversationDTO {
     private Long id;
     private UserDTO customer;
     private UserDTO operator;
+    private UserDTO closedBy;
     private ConversationTopic topic;
     private ConversationStatus status;
+    private java.time.Instant createdAt;
+    private java.time.Instant closedAt;
 
     public ConversationDTO() {}
 
-    public ConversationDTO(Long id, UserDTO customer, UserDTO operator, ConversationTopic topic, ConversationStatus status) {
+    public ConversationDTO(Long id, UserDTO customer, UserDTO operator, UserDTO closedBy, ConversationTopic topic, ConversationStatus status, java.time.Instant createdAt, java.time.Instant closedAt) {
         this.id = id;
         this.customer = customer;
         this.operator = operator;
+        this.closedBy = closedBy;
         this.topic = topic;
         this.status = status;
+        this.createdAt = createdAt;
+        this.closedAt = closedAt;
     }
 
     public static ConversationDTO fromEntity(Conversation conversation) {
@@ -29,8 +35,11 @@ public class ConversationDTO {
             conversation.id,
             UserDTO.fromEntity(conversation.customer),
             UserDTO.fromEntity(conversation.operator),
+            UserDTO.fromEntity(conversation.closedBy),
             conversation.topic,
-            conversation.status
+            conversation.status,
+            conversation.createdAt,
+            conversation.closedAt
         );
     }
 
@@ -46,11 +55,23 @@ public class ConversationDTO {
         return operator;
     }
 
+    public UserDTO getClosedBy() {
+        return closedBy;
+    }
+
     public ConversationTopic getTopic() {
         return topic;
     }
 
     public ConversationStatus getStatus() {
         return status;
+    }
+
+    public java.time.Instant getCreatedAt() {
+        return createdAt;
+    }
+
+    public java.time.Instant getClosedAt() {
+        return closedAt;
     }
 }

@@ -3,6 +3,8 @@ import jakarta.enterprise.event.Observes;
 import jakarta.inject.Singleton;
 import jakarta.transaction.Transactional;
 
+import java.time.Instant;
+
 import org.tilenp.entities.Conversation;
 import org.tilenp.entities.Message;
 import org.tilenp.entities.User;
@@ -115,6 +117,7 @@ public class Startup {
         conv4.closedBy = operator_lisaRodriguez;
         conv4.topic = ConversationTopic.TECHNICAL;
         conv4.status = ConversationStatus.CLOSED;
+        conv4.closedAt = Instant.now().minusSeconds(3600); // Closed 1 hour ago
         conv4.persist();
 
         // Another active conversation

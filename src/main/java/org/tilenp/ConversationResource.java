@@ -19,6 +19,7 @@ import org.tilenp.enums.ConversationStatus;
 import org.tilenp.enums.UserRole;
 import org.tilenp.exception.ErrorMessages;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -206,8 +207,9 @@ public class ConversationResource {
             throw new BadRequestException(ErrorMessages.CONVERSATION_ALREADY_COMPLETED);
         }
 
-        conversation.status = ConversationStatus.CLOSED; //TODO: closing timestamp
+        conversation.status = ConversationStatus.CLOSED;
         conversation.closedBy = user;
+        conversation.closedAt = Instant.now();
         conversation.persist();
         
         return ConversationDTO.fromEntity(conversation);

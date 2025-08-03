@@ -6,6 +6,7 @@ import org.tilenp.enums.ConversationStatus;
 import org.tilenp.enums.ConversationTopic;
 import org.tilenp.enums.UserRole;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,12 @@ public class Conversation extends PanacheEntity {
 
     @OneToMany(mappedBy="conversation")
     public List<Message> messages;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    public Instant createdAt = Instant.now();
+
+    @Column(name = "closed_at")
+    public Instant closedAt;
 
     public static Conversation findById(Long id){
         return find("id", id).firstResult();
