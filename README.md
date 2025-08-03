@@ -1,66 +1,170 @@
-# support-portal-api
+# Support Portal API
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+A RESTful API for a tech support portal that enables customers to create support conversations and operators to manage them.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+## Getting Started
 
-## Running the application in dev mode
+### Running Locally
 
-You can run your application in dev mode that enables live coding using:
+1. **Start the application in dev mode**:
+   ```bash
+   ./mvnw quarkus:dev
+   ```
+   - The API will be available at `http://localhost:8080`
+   - A PostgreSQL database is automatically started using Quarkus Dev Services
+   - The database is recreated on each application start (in-memory for development only)
+   - For production use, configure a persistent database in `application.properties`
 
-```shell script
-./mvnw quarkus:dev
+2. **Test users** (created automatically on startup):
+   - **Customer users**:
+     - `john:password123`
+     - `sarah:password123`
+     - `mike:password123`
+     - `emma:password123`
+   - **Operator users**:
+     - `alex:operator123`
+     - `lisa:operator123`
+     - `david:operator123`
+
+## API Endpoints
+
+### Authentication
+- All endpoints require Basic Authentication
+- Users can only access their own conversations
+- Operators can access all conversations
+
+### Create a Conversation
+```
+POST /conversations
+```
+**Request Body**:
+```json
+{
+  "topic": "TECHNICAL|SERVICES|CHAT",
+  "initialMessage": "Your message here"
+}
+```
+**Roles**: USER only
+
+### List Conversations
+```
+GET /conversations?operatorId=1,2&topic=TECHNICAL,CHAT&status=WAITING,ACTIVE
+```
+**Query Parameters**:
+- `operatorId`: Filter by operator ID (comma-separated values are OR'ed)
+- `topic`: Filter by topic (comma-separated values are OR'ed)
+- `status`: Filter by status (comma-separated values are OR'ed)
+
+**Note**: Multiple values within the same parameter are combined with OR logic. For example, `status=WAITING,ACTIVE` will return conversations that are either WAITING OR ACTIVE. Different parameters are combined with AND logic, so `status=WAITING,ACTIVE&topic=TECHNICAL` will return conversations that are (WAITING OR ACTIVE) AND have the TECHNICAL topic.
+
+**Roles**: USER, OPERATOR
+
+### Get Conversation Details
+```
+GET /conversations/{id}
+```
+**Roles**: USER (own conversations only), OPERATOR
+
+### Get Conversation Messages
+```
+GET /conversations/{id}/messages
+```
+**Roles**: USER (own conversations only), OPERATOR
+
+### Add Message to Conversation
+```
+POST /conversations/{id}/messages
+```
+**Request Body**:
+```json
+{
+  "text": "Your message"
+}
+```
+**Notes**:
+- Messages can only be added to conversations with status `WAITING` or `ACTIVE`
+
+**Roles**: USER (own conversations only), OPERATOR
+
+### Accept Conversation (Operator Only)
+```
+POST /conversations/{id}/accept
+```
+**Notes**:
+- Only conversations with status `WAITING` can be accepted
+
+**Roles**: OPERATOR only
+
+### Close Conversation
+```
+POST /conversations/{id}/close
+```
+**Notes**:
+- Only conversations with status `WAITING` or `ACTIVE` can be closed
+- Both operators and users can close their conversations. Users are limited to closing their own conversations. Operators can close any conversation.
+
+**Roles**: USER (own conversations), OPERATOR
+
+## Data Models
+
+### Conversation
+```typescript
+{
+  id: number;
+  customer: User;
+  operator: User | null;
+  closedBy: User | null;
+  topic: 'TECHNICAL' | 'SERVICES' | 'CHAT';
+  status: 'WAITING' | 'ACTIVE' | 'CLOSED';
+  createdAt: string; // ISO-8601 timestamp
+  closedAt: string | null; // ISO-8601 timestamp
+}
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
-
-## Packaging and running the application
-
-The application can be packaged using:
-
-```shell script
-./mvnw package
+### Message
+```typescript
+{
+  id: number;
+  conversationId: number;
+  author: User;
+  text: string;
+  createdAt: string; // ISO-8601 timestamp
+}
 ```
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
-
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
-
-If you want to build an _über-jar_, execute the following command:
-
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
+### User
+```typescript
+{
+  id: number;
+  username: string;  
+  password: string;  
+  name: string;      
+  role: 'USER' | 'OPERATOR';
+}
 ```
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+## Using the CLI Script
 
-## Creating a native executable
+The project includes an improvised script for easier API interaction:
 
-You can create a native executable using:
+1. Make the script executable:
+   ```bash
+   chmod +x support-api-cli.sh
+   ```
 
-```shell script
-./mvnw package -Dnative
-```
+2. Source the script to load the functions:
+   ```bash
+   source support-api-cli.sh
+   ```
 
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
-
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
-```
-
-You can then execute your native executable with: `./target/support-portal-api-1.0.0-SNAPSHOT-runner`
-
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
-
-## Related Guides
-
-- REST ([guide](https://quarkus.io/guides/rest)): A Jakarta REST implementation utilizing build time processing and Vert.x. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.
-
-## Provided Code
-
-### REST
-
-Easily start your REST Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+3. Use the available functions:
+   ```bash
+   # Example: Create a conversation
+   create_conversation john password123 TECHNICAL "I need help with my account"
+   
+   # Example: Get all conversations
+   get_conversations alice operator123
+   
+   # Example: Add a message to a conversation
+   add_message alice operator123 1 "Hello, how can I help you?"
+   ```
