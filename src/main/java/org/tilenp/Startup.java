@@ -88,7 +88,7 @@ public class Startup {
         conv1.operator = operator_alexThompson;
         conv1.closedBy = null;
         conv1.topic = ConversationTopic.TECHNICAL;
-        conv1.status = ConversationStatus.TAKEN;
+        conv1.status = ConversationStatus.ACTIVE;
         conv1.persist();
 
         // Pending conversations waiting for operator
@@ -114,7 +114,7 @@ public class Startup {
         conv4.operator = operator_lisaRodriguez;
         conv4.closedBy = operator_lisaRodriguez;
         conv4.topic = ConversationTopic.TECHNICAL;
-        conv4.status = ConversationStatus.COMPLETED;
+        conv4.status = ConversationStatus.CLOSED;
         conv4.persist();
 
         // Another active conversation
@@ -123,7 +123,7 @@ public class Startup {
         conv5.operator = operator_davidChen;
         conv5.closedBy = null;
         conv5.topic = ConversationTopic.SERVICES;
-        conv5.status = ConversationStatus.TAKEN;
+        conv5.status = ConversationStatus.ACTIVE;
         conv5.persist();
 
         // Create Messages

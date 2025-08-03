@@ -1,8 +1,6 @@
 package org.tilenp;
 
-import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.core.Is.is;
 
 import org.apache.http.HttpStatus;
 import org.junit.jupiter.api.Test;

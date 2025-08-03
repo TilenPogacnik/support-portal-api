@@ -1,11 +1,9 @@
 package org.tilenp.dto;
 
 public class CreateMessageDTO {
-    public Long authorId;
     public String text;
 
-    public CreateMessageDTO(Long authorId, String text) {
-        this.authorId = authorId;
+    public CreateMessageDTO(String text) {
         this.text = text;
     }
 }

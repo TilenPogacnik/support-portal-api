@@ -6,13 +6,10 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
-import io.quarkus.security.identity.SecurityIdentity;
-import org.tilenp.dto.CloseConversationDTO;
 import org.tilenp.dto.ConversationDTO;
 import org.tilenp.dto.CreateConversationDTO;
 import org.tilenp.dto.CreateMessageDTO;
 import org.tilenp.dto.MessageDTO;
-import org.tilenp.dto.TakeoverConversationDTO;
 import org.tilenp.entities.Conversation;
 import org.tilenp.entities.Message;
 import org.tilenp.entities.User;
@@ -32,51 +29,48 @@ public class ConversationResource {
     @Transactional
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed(UserRole.USER)
+    @RolesAllowed(UserRole.USER) //Operators are not allowed to create conversations
     public ConversationDTO createConversation(CreateConversationDTO createConversationDTO){
-        // Validate DTO
         validateCreateConversationDTO(createConversationDTO);
         
-        User customer = currentUser.get();
+        User user = currentUser.get();
         
-        // Create new conversation
         Conversation conversation = new Conversation();
-        conversation.customer = customer;
+        conversation.customer = user;
         conversation.operator = null;
         conversation.topic = createConversationDTO.topic;
         conversation.status = ConversationStatus.WAITING;
         conversation.persist();
 
-        // Create initial message
         Message initialMessage = new Message();
         initialMessage.conversation = conversation;
-        initialMessage.author = customer;
+        initialMessage.author = user;
         initialMessage.text = createConversationDTO.initialMessage;
         initialMessage.persist();
 
-        return toConversationDTO(conversation);
+        return toConversationDTO(conversation); //TODO: include messages
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    @RolesAllowed(UserRole.OPERATOR) // Only operators can see all conversations
+    @RolesAllowed(UserRole.OPERATOR) //TODO: permit all, if user return only their own conversations
     public List<ConversationDTO> getAllConversations(){ //TODO: add filters for status, operator, topic
         List<Conversation> conversations = Conversation.listAll();
         return conversations.stream()
                 .map(this::toConversationDTO)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()); //TODO dont include messages
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{id}")
-    @PermitAll // Both customers and operators can view conversations (TODO: restrict to participants)
+    @PermitAll
     public ConversationDTO getConversation(@PathParam("id") Long id){
         User user = currentUser.get();
 
         Conversation conv = Conversation.findById(id);
         if (conv == null) {
-            return null; // TODO: Consider throwing a proper 404 exception
+            return null; // TODO: Consider throwing a proper 404 exception - test with invalid id, exception is thrown earlier
         }
 
         //Users can only view their own conversations, operators can view all conversations
@@ -84,21 +78,26 @@ public class ConversationResource {
             throw new NotAuthorizedException("User is not authorized to view this conversation");
         }
 
-        return toConversationDTO(conv);
+        return toConversationDTO(conv); //TODO: include messages
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{id}/messages")
-    @PermitAll // Both customers and operators can view messages (TODO: restrict to participants)
+    @PermitAll
     public List<MessageDTO> getConversationMessages(@PathParam("id") Long id){
-        Conversation conv = Conversation.findById(id);
-        if (conv == null) {
-            return null; // TODO: Consider throwing a proper 404 exception
+        User user = currentUser.get();
+        Conversation conversation = Conversation.findById(id);
+        if (conversation == null) {
+            return null; // TODO: Consider throwing a proper 404 exception - test with invalid id, exception is thrown earlier
+        }
+
+        //Users can only view their own conversations, operators can view all conversations
+        if (user.userRole == UserRole.USER && conversation.customer.id != user.id) {
+            throw new NotAuthorizedException("User is not authorized to view this conversation");
         }
         
-        List<Message> messages = Message.findByConversationId(id);
-        return messages.stream()
+        return conversation.messages.stream()
                 .map(this::toMessageDTO)
                 .collect(Collectors.toList());
     }
@@ -107,35 +106,30 @@ public class ConversationResource {
     @Transactional
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/{id}/messages")
-    @PermitAll // Both customers and operators can send messages (TODO: restrict to participants)
+    @Path("/{id}/messages") //TODO: cleanup order of annotations
+    @PermitAll
     public MessageDTO addMessageToConversation(@PathParam("id") Long conversationId, CreateMessageDTO createMessageDTO){
-        // Validate DTO
+        User user = currentUser.get();
+        
         validateCreateMessageDTO(createMessageDTO);
         
-        // Find the conversation
         Conversation conversation = Conversation.findById(conversationId);
         if (conversation == null) {
             throw new IllegalArgumentException("Conversation not found with id: " + conversationId);
         }
+
+        //Users can only send messages to their own conversations, operators can send messages to any conversation
+        if (user.userRole == UserRole.USER && conversation.customer.id != user.id) {
+            throw new NotAuthorizedException("User is not authorized to send messages to this conversation");
+        }
         
-        // Check if conversation is closed
-        if (conversation.status == ConversationStatus.COMPLETED) {
+        //We do not accept messages to completed conversations
+        if (conversation.status == ConversationStatus.CLOSED) {
             throw new IllegalArgumentException("Cannot send messages to a completed conversation");
         }
-        
-        // Find the author
-        User author = User.findById(createMessageDTO.authorId);
-        if (author == null) {
-            throw new IllegalArgumentException("User not found with id: " + createMessageDTO.authorId);
-        }
 
-        //TODO: users can only send message to their own conversations, operators can send message to any conversation
-        
-        // Create and persist the message
         Message message = new Message();
         message.conversation = conversation;
-        message.author = author;
         message.text = createMessageDTO.text;
         message.persist();
         
@@ -146,32 +140,24 @@ public class ConversationResource {
     @Transactional
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/{id}/takeover")
-    @RolesAllowed(UserRole.OPERATOR) // Only operators can take over conversations
-    public ConversationDTO takeoverConversation(@PathParam("id") Long conversationId, TakeoverConversationDTO takeoverDTO){
-        // Validate DTO
-        validateTakeoverConversationDTO(takeoverDTO);
-        
+    @Path("/{id}/accept")
+    @RolesAllowed(UserRole.OPERATOR)
+    public ConversationDTO acceptConversation(@PathParam("id") Long conversationId){
+        User user = currentUser.get();
+                
         // Find the conversation
         Conversation conversation = Conversation.findById(conversationId);
         if (conversation == null) {
             throw new IllegalArgumentException("Conversation not found with id: " + conversationId);
         }
         
-        // Check if conversation is in WAITING status
+        //Only waiting conversations can be accepted
         if (conversation.status != ConversationStatus.WAITING) {
-            throw new IllegalArgumentException("Only waiting conversations can be taken over. Current status: " + conversation.status);
+            throw new IllegalArgumentException("Only waiting conversations can be accepted. Current status: " + conversation.status);
         }
         
-        // Find the operator
-        User operator = User.findById(takeoverDTO.operatorId);
-        if (operator == null) {
-            throw new IllegalArgumentException("Operator not found with id: " + takeoverDTO.operatorId);
-        }
-        
-        // Assign operator and change status to TAKEN
-        conversation.operator = operator;
-        conversation.status = ConversationStatus.TAKEN;
+        conversation.operator = user;
+        conversation.status = ConversationStatus.ACTIVE;
         conversation.persist();
         
         return toConversationDTO(conversation);
@@ -182,31 +168,26 @@ public class ConversationResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Path("/{id}/close")
     @Produces(MediaType.APPLICATION_JSON)
-    @PermitAll // Both customers and operators can close conversations
-    public ConversationDTO closeConversation(@PathParam("id") Long conversationId, CloseConversationDTO closeDTO){
-        // Validate DTO
-        validateCloseConversationDTO(closeDTO);
-        
-        // Find the conversation
+    @PermitAll
+    public ConversationDTO closeConversation(@PathParam("id") Long conversationId){
+        User user = currentUser.get();
         Conversation conversation = Conversation.findById(conversationId);
         if (conversation == null) {
             throw new IllegalArgumentException("Conversation not found with id: " + conversationId);
         }
+
+        //Users can only close their own conversations. Operators can close any conversation.
+        if (user.userRole == UserRole.USER && conversation.customer.id != user.id) {
+            throw new NotAuthorizedException("User is not authorized to close this conversation");
+        }
         
-        // Check if conversation is already completed
-        if (conversation.status == ConversationStatus.COMPLETED) {
+        // Completed conversations cannot be closed again
+        if (conversation.status == ConversationStatus.CLOSED) {
             throw new IllegalArgumentException("Conversation is already completed");
         }
-        
-        // Find the user who is closing the conversation
-        User closingUser = User.findById(closeDTO.userId);
-        if (closingUser == null) {
-            throw new IllegalArgumentException("User not found with id: " + closeDTO.userId);
-        }
-        
-        // Close the conversation and record who closed it
-        conversation.status = ConversationStatus.COMPLETED;
-        conversation.closedBy = closingUser;
+
+        conversation.status = ConversationStatus.CLOSED; //TODO: closing timestamp
+        conversation.closedBy = user;
         conversation.persist();
         
         return toConversationDTO(conversation);
@@ -222,23 +203,8 @@ public class ConversationResource {
     }
 
     private void validateCreateMessageDTO(CreateMessageDTO dto) {
-        if (dto.authorId == null) {
-            throw new IllegalArgumentException("Author ID is required");
-        }
         if (dto.text == null || dto.text.trim().isEmpty()) {
             throw new IllegalArgumentException("Message text is required and cannot be empty");
-        }
-    }
-
-    private void validateTakeoverConversationDTO(TakeoverConversationDTO dto) {
-        if (dto.operatorId == null) {
-            throw new IllegalArgumentException("Operator ID is required");
-        }
-    }
-
-    private void validateCloseConversationDTO(CloseConversationDTO dto) {
-        if (dto.userId == null) {
-            throw new IllegalArgumentException("User ID is required");
         }
     }
 
