@@ -38,17 +38,17 @@ public class ConversationResource {
         Conversation conversation = new Conversation();
         conversation.customer = user;
         conversation.operator = null;
-        conversation.topic = createConversationDTO.topic;
+        conversation.topic = createConversationDTO.getTopic();
         conversation.status = ConversationStatus.WAITING;
         conversation.persist();
 
         Message initialMessage = new Message();
         initialMessage.conversation = conversation;
         initialMessage.author = user;
-        initialMessage.text = createConversationDTO.initialMessage;
+        initialMessage.text = createConversationDTO.getInitialMessage();
         initialMessage.persist();
 
-        return toConversationDTO(conversation); //TODO: include messages
+        return ConversationDTO.fromEntity(conversation); //TODO: include messages
     }
 
     @GET
@@ -57,7 +57,7 @@ public class ConversationResource {
     public List<ConversationDTO> getAllConversations(){ //TODO: add filters for status, operator, topic
         List<Conversation> conversations = Conversation.listAll();
         return conversations.stream()
-                .map(this::toConversationDTO)
+                .map(ConversationDTO::fromEntity)
                 .collect(Collectors.toList()); //TODO dont include messages
     }
 
@@ -78,7 +78,7 @@ public class ConversationResource {
             throw new NotAuthorizedException("User is not authorized to view this conversation");
         }
 
-        return toConversationDTO(conv); //TODO: include messages
+        return ConversationDTO.fromEntity(conv); //TODO: include messages
     }
 
     @GET
@@ -98,7 +98,7 @@ public class ConversationResource {
         }
         
         return conversation.messages.stream()
-                .map(this::toMessageDTO)
+                .map(MessageDTO::fromEntity)
                 .collect(Collectors.toList());
     }
 
@@ -130,10 +130,10 @@ public class ConversationResource {
 
         Message message = new Message();
         message.conversation = conversation;
-        message.text = createMessageDTO.text;
+        message.text = createMessageDTO.getText();
         message.persist();
         
-        return toMessageDTO(message);
+        return MessageDTO.fromEntity(message);
     }
 
     @POST
@@ -160,7 +160,7 @@ public class ConversationResource {
         conversation.status = ConversationStatus.ACTIVE;
         conversation.persist();
         
-        return toConversationDTO(conversation);
+        return ConversationDTO.fromEntity(conversation);
     }
 
     @POST
@@ -190,44 +190,22 @@ public class ConversationResource {
         conversation.closedBy = user;
         conversation.persist();
         
-        return toConversationDTO(conversation);
+        return ConversationDTO.fromEntity(conversation);
     }
 
     private void validateCreateConversationDTO(CreateConversationDTO dto) {
-        if (dto.topic == null) {
+        if (dto.getTopic() == null) {
             throw new IllegalArgumentException("Topic is required");
         }
-        if (dto.initialMessage == null || dto.initialMessage.trim().isEmpty()) {
+        if (dto.getInitialMessage() == null || dto.getInitialMessage().trim().isEmpty()) {
             throw new IllegalArgumentException("Initial message is required and cannot be empty");
         }
     }
 
     private void validateCreateMessageDTO(CreateMessageDTO dto) {
-        if (dto.text == null || dto.text.trim().isEmpty()) {
+        if (dto.getText() == null || dto.getText().trim().isEmpty()) {
             throw new IllegalArgumentException("Message text is required and cannot be empty");
         }
-    }
-
-    private MessageDTO toMessageDTO(Message message) {
-        return new MessageDTO(
-                message.id,
-                message.conversation.id,
-                message.author.id,
-                message.author.name,
-                message.text
-        );
-    }
-
-    private ConversationDTO toConversationDTO(Conversation conv) {
-        return new ConversationDTO(
-                conv.id,
-                conv.customer != null ? conv.customer.id : null,
-                conv.customer != null ? conv.customer.name : null,
-                conv.operator != null ? conv.operator.id : null,
-                conv.operator != null ? conv.operator.name : null,
-                conv.topic,
-                conv.status
-        );
     }
 }
 

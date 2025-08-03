@@ -15,7 +15,7 @@ public class Message extends PanacheEntity {
     @JoinColumn(name="conversation_id", nullable = false)
     public Conversation conversation;
 
-    @ManyToOne //TODO: a je to ok? verjetno ne rabimo joinat? ali pac
+    @ManyToOne
     @JoinColumn(name="author_id", nullable = false)
     public User author;
     public String text;

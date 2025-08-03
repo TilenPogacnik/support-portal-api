@@ -1,9 +1,13 @@
 package org.tilenp.dto;
 
 public class CreateMessageDTO {
-    public String text;
+    private String text;
 
     public CreateMessageDTO(String text) {
         this.text = text;
+    }
+
+    public String getText() {
+        return text;
     }
 }
