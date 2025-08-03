@@ -1,13 +1,15 @@
 package org.tilenp.dto;
 
+import org.tilenp.enums.ConversationTopic;
+
 public class CreateConversationDTO {
-    private String test;
+    public Long customerId;
+    public ConversationTopic topic;
+    public String initialMessage;
 
-    public String getTest() {
-        return test;
-    }
-
-    public void setTest(String test) {
-        this.test = test;
+    public CreateConversationDTO(Long customerId, ConversationTopic topic, String initialMessage) {
+        this.customerId = customerId;
+        this.topic = topic;
+        this.initialMessage = initialMessage;
     }
 }
