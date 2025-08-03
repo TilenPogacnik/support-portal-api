@@ -15,9 +15,6 @@ TODO
    Request: { "message": "string" }
    Response: { "messageId": "string", "timestamp": "ISO8601" }
 
-4. GET /api/conversations/{conversationId}/messages
-   Purpose: Get all messages in conversation
-   Response: { "messages": [{ "messageId": "string", "sender": "customer|operator", "message": "string", "timestamp": "ISO8601" }] }
 
 === OPERATOR ENDPOINTS (Web App) ===
 All require: Authorization: Basic <credentials>
@@ -39,6 +36,10 @@ All require: Authorization: Basic <credentials>
 2. GET /api/conversations/{conversationId}
    Purpose: Get conversation details and messages
    Response: { "conversationId": "string", "topic": "string", "status": "pending|active|closed", "messages": [...] }
+
+4. GET /api/conversations/{conversationId}/messages
+   Purpose: Get all messages in conversation
+   Response: { "messages": [{ "messageId": "string", "sender": "customer|operator", "message": "string", "timestamp": "ISO8601" }] }
 
 
 === STATUS/HEALTH ENDPOINTS ===

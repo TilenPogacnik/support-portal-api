@@ -5,6 +5,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import org.tilenp.dto.ConversationDTO;
 import org.tilenp.dto.CreateConversationDTO;
+import org.tilenp.dto.CreateMessageDTO;
 import org.tilenp.dto.MessageDTO;
 import org.tilenp.entities.Conversation;
 import org.tilenp.entities.Message;
@@ -84,6 +85,42 @@ public class ConversationResource {
                 .collect(Collectors.toList());
     }
 
+    @POST
+    @Transactional
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Path("/{id}/messages")
+    public MessageDTO addMessageToConversation(@PathParam("id") Long conversationId, CreateMessageDTO createMessageDTO){
+        // Validate DTO
+        validateCreateMessageDTO(createMessageDTO);
+        
+        // Find the conversation
+        Conversation conversation = Conversation.findById(conversationId);
+        if (conversation == null) {
+            throw new IllegalArgumentException("Conversation not found with id: " + conversationId);
+        }
+        
+        // Check if conversation is closed
+        if (conversation.status == ConversationStatus.COMPLETED) {
+            throw new IllegalArgumentException("Cannot send messages to a completed conversation");
+        }
+        
+        // Find the author
+        User author = User.findById(createMessageDTO.authorId);
+        if (author == null) {
+            throw new IllegalArgumentException("User not found with id: " + createMessageDTO.authorId);
+        }
+        
+        // Create and persist the message
+        Message message = new Message();
+        message.conversation = conversation;
+        message.author = author;
+        message.text = createMessageDTO.text;
+        message.persist();
+        
+        return toMessageDTO(message);
+    }
+
     private void validateCreateConversationDTO(CreateConversationDTO dto) {
         if (dto.customerId == null) {
             throw new IllegalArgumentException("Customer ID is required");
@@ -93,6 +130,15 @@ public class ConversationResource {
         }
         if (dto.initialMessage == null || dto.initialMessage.trim().isEmpty()) {
             throw new IllegalArgumentException("Initial message is required and cannot be empty");
+        }
+    }
+
+    private void validateCreateMessageDTO(CreateMessageDTO dto) {
+        if (dto.authorId == null) {
+            throw new IllegalArgumentException("Author ID is required");
+        }
+        if (dto.text == null || dto.text.trim().isEmpty()) {
+            throw new IllegalArgumentException("Message text is required and cannot be empty");
         }
     }
 
