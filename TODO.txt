@@ -1,16 +1,4 @@
-Tech Support Application - REST API Endpoints TODO
-
-AUTHENTICATION:
-- HTTP Basic Authentication for all operator endpoints
-- Header: Authorization: Basic <base64(username:password)>
-- No authentication required for customer endpoints
-
 TODO
-- authentication
-- permissions for endpoints (which endpoints can be used as operator only?)
-- getting conversations and messages: 
-   - operator can get all conversations
-   - customer can get only their own conversations
 - filtering conversations by topic, status
 - pagination for conversations and messages
 - add timestamps to messages and conversations

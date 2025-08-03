@@ -38,14 +38,14 @@ public class ConversationResource {
         Conversation conversation = new Conversation();
         conversation.customer = user;
         conversation.operator = null;
-        conversation.topic = createConversationDTO.getTopic();
+        conversation.topic = createConversationDTO.topic();
         conversation.status = ConversationStatus.WAITING;
         conversation.persist();
 
         Message initialMessage = new Message();
         initialMessage.conversation = conversation;
         initialMessage.author = user;
-        initialMessage.text = createConversationDTO.getInitialMessage();
+        initialMessage.text = createConversationDTO.initialMessage();
         initialMessage.persist();
 
         return ConversationDTO.fromEntity(conversation); //TODO: include messages
@@ -65,35 +65,35 @@ public class ConversationResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{id}")
     @PermitAll
-    public ConversationDTO getConversation(@PathParam("id") Long id){
+    public ConversationDTO getConversation(@PathParam("id") Long conversationId){
         User user = currentUser.get();
 
-        Conversation conv = Conversation.findById(id);
-        if (conv == null) {
+        Conversation conversation = Conversation.findById(conversationId);
+        if (conversation == null) {
             return null; // TODO: Consider throwing a proper 404 exception - test with invalid id, exception is thrown earlier
         }
 
         //Users can only view their own conversations, operators can view all conversations
-        if (user.userRole == UserRole.USER && conv.customer.id != user.id) {
+        if (UserRole.USER.equals(user.userRole) && !conversation.customer.equals(user)) {
             throw new NotAuthorizedException("User is not authorized to view this conversation");
         }
 
-        return ConversationDTO.fromEntity(conv); //TODO: include messages
+        return ConversationDTO.fromEntity(conversation); //TODO: include messages
     }
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/{id}/messages")
     @PermitAll
-    public List<MessageDTO> getConversationMessages(@PathParam("id") Long id){
+    public List<MessageDTO> getConversationMessages(@PathParam("id") Long conversationId){
         User user = currentUser.get();
-        Conversation conversation = Conversation.findById(id);
+        Conversation conversation = Conversation.findById(conversationId);
         if (conversation == null) {
             return null; // TODO: Consider throwing a proper 404 exception - test with invalid id, exception is thrown earlier
         }
 
         //Users can only view their own conversations, operators can view all conversations
-        if (user.userRole == UserRole.USER && conversation.customer.id != user.id) {
+        if (UserRole.USER.equals(user.userRole) && !conversation.customer.equals(user)) {
             throw new NotAuthorizedException("User is not authorized to view this conversation");
         }
         
@@ -119,7 +119,7 @@ public class ConversationResource {
         }
 
         //Users can only send messages to their own conversations, operators can send messages to any conversation
-        if (user.userRole == UserRole.USER && conversation.customer.id != user.id) {
+        if (UserRole.USER.equals(user.userRole) && !conversation.customer.equals(user)) {
             throw new NotAuthorizedException("User is not authorized to send messages to this conversation");
         }
         
@@ -130,7 +130,7 @@ public class ConversationResource {
 
         Message message = new Message();
         message.conversation = conversation;
-        message.text = createMessageDTO.getText();
+        message.text = createMessageDTO.text();
         message.persist();
         
         return MessageDTO.fromEntity(message);
@@ -177,7 +177,7 @@ public class ConversationResource {
         }
 
         //Users can only close their own conversations. Operators can close any conversation.
-        if (user.userRole == UserRole.USER && conversation.customer.id != user.id) {
+        if (UserRole.USER.equals(user.userRole) && !conversation.customer.equals(user)) {
             throw new NotAuthorizedException("User is not authorized to close this conversation");
         }
         
@@ -194,16 +194,16 @@ public class ConversationResource {
     }
 
     private void validateCreateConversationDTO(CreateConversationDTO dto) {
-        if (dto.getTopic() == null) {
+        if (dto.topic() == null) {
             throw new IllegalArgumentException("Topic is required");
         }
-        if (dto.getInitialMessage() == null || dto.getInitialMessage().trim().isEmpty()) {
+        if (dto.initialMessage() == null || dto.initialMessage().trim().isEmpty()) {
             throw new IllegalArgumentException("Initial message is required and cannot be empty");
         }
     }
 
     private void validateCreateMessageDTO(CreateMessageDTO dto) {
-        if (dto.getText() == null || dto.getText().trim().isEmpty()) {
+        if (dto.text() == null || dto.text().trim().isEmpty()) {
             throw new IllegalArgumentException("Message text is required and cannot be empty");
         }
     }

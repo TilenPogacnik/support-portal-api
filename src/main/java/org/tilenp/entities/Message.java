@@ -1,10 +1,7 @@
 package org.tilenp.entities;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 
 @Entity
@@ -18,5 +15,7 @@ public class Message extends PanacheEntity {
     @ManyToOne
     @JoinColumn(name="author_id", nullable = false)
     public User author;
+
+    @Column(nullable = false)
     public String text;
 }

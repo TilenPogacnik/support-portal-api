@@ -11,14 +11,18 @@ import jakarta.persistence.*;
 @Table(name="users")
 @UserDefinition
 public class User extends PanacheEntity {
+    @Column(nullable = false)
     public String name;
 
     @Username
+    @Column(nullable = false)
     public String username;
 
     @Password
+    @Column(nullable = false)
     public String password;
     
     @Roles
+    @Column(nullable = false)
     public String userRole;
 }

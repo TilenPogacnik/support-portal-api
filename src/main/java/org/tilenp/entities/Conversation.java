@@ -11,7 +11,7 @@ import java.util.List;
 @Table(name="conversations")
 public class Conversation extends PanacheEntity {
     @ManyToOne
-    @JoinColumn(name="customer_id")
+    @JoinColumn(name="customer_id", nullable = false)
     public User customer;
 
     @ManyToOne
@@ -23,15 +23,17 @@ public class Conversation extends PanacheEntity {
     public User closedBy;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     public ConversationTopic topic;
     
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     public ConversationStatus status;
 
     @OneToMany(mappedBy="conversation")
     public List<Message> messages;
 
-    public static Conversation findById(Long id){ //TODO move to repository
+    public static Conversation findById(Long id){
         return find("id", id).firstResult();
     }
 }
