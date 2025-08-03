@@ -6,69 +6,41 @@ AUTHENTICATION:
 - No authentication required for customer endpoints
 
 TODO
+- authentication
 - permissions for endpoints (which endpoints can be used as operator only?)
-
-=== ENDPOINTS ===
-
-3. POST /api/conversations/{conversationId}/messages
-   Purpose: Customer/operator sends message in existing conversation
-   Request: { "message": "string" }
-   Response: { "messageId": "string", "timestamp": "ISO8601" }
-
-
-=== OPERATOR ENDPOINTS (Web App) ===
-All require: Authorization: Basic <credentials>
-
-6. POST /api/operator/conversations/{conversationId}/takeover
-   Purpose: Operator takes over pending conversation
-   Response: { "success": true, "message": "Conversation assigned" }
-
-7. POST /api/conversations/{conversationId}/close
-   Purpose: Close/resolve conversation
-   Response: { "success": true, "message": "Conversation closed" }
-
-=== DONE ENDPOINTS ===
-1. POST /api/conversations 
-   Purpose: Create new support conversation
-   Request: { "customerName": "string", "topic": "technical|services|chat", "message": "string" }
-   Response: { "conversationId": "string", "status": "pending", "timestamp": "ISO8601" }
-
-2. GET /api/conversations/{conversationId}
-   Purpose: Get conversation details and messages
-   Response: { "conversationId": "string", "topic": "string", "status": "pending|active|closed", "messages": [...] }
-
-4. GET /api/conversations/{conversationId}/messages
-   Purpose: Get all messages in conversation
-   Response: { "messages": [{ "messageId": "string", "sender": "customer|operator", "message": "string", "timestamp": "ISO8601" }] }
+- getting conversations and messages: 
+   - operator can get all conversations
+   - customer can get only their own conversations
+- filtering conversations by topic, status
+- pagination for conversations and messages
+- add timestamps to messages and conversations
 
 
-=== STATUS/HEALTH ENDPOINTS ===
+# Operator accessing all conversations
+curl -u alex:operator123 http://localhost:8080/conversations
 
-10. GET /api/health
-    Purpose: API health check
-    Response: { "status": "healthy", "timestamp": "ISO8601" }
+# Customer creating a conversation
+curl -u john:password123 -X POST http://localhost:8080/conversations \
+  -H "Content-Type: application/json" \
+  -d '{"customerId": 1, "topic": "TECHNICAL", "initialMessage": "Help needed"}'
 
-=== IMPLEMENTATION NOTES ===
+# Operator taking over a conversation
+curl -u lisa:operator123 -X POST http://localhost:8080/conversations/2/takeover \
+  -H "Content-Type: application/json" \
+  -d '{"operatorId": 6}'
 
-- Conversation States: pending → active → closed
-- Topics: technical, services, chat
-- Only one operator can take over a pending conversation
-- Operators are pre-registered (no registration endpoint needed)
-- Consider WebSocket endpoints for real-time updates:
-  * /ws/customer/{conversationId} - Real-time updates for customers
-  * /ws/operator/{operatorId} - Real-time updates for operators
 
-=== DEVELOPMENT CHECKLIST ===
-[ ] Implement customer conversation creation
-[ ] Implement customer messaging
-[ ] Implement operator authentication
-[ ] Implement operator conversation listing
-[ ] Implement operator takeover functionality
-[ ] Implement operator messaging
-[ ] Implement conversation closing
-[ ] Add proper error handling and validation
-[ ] Add database schema design
-[ ] Add real-time updates (WebSocket)
-[ ] Add API documentation
-[ ] Add unit tests
-[ ] Add integration tests
+
+  # John (customer) creating a conversation
+curl -u john:password123 -X POST http://localhost:8080/conversations \
+  -H "Content-Type: application/json" \
+  -d '{"customerId": 1, "topic": "TECHNICAL", "initialMessage": "Help needed"}'
+
+
+  # Alex (operator) viewing all conversations
+curl -u alex:operator123 http://localhost:8080/conversations
+
+# Lisa (operator) taking over a conversation
+curl -u lisa:operator123 -X POST http://localhost:8080/conversations/2/takeover \
+  -H "Content-Type: application/json" \
+  -d '{"operatorId": 6}'

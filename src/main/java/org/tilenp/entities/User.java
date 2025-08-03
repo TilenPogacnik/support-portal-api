@@ -1,16 +1,24 @@
 package org.tilenp.entities;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
+import io.quarkus.security.jpa.Password;
+import io.quarkus.security.jpa.Roles;
+import io.quarkus.security.jpa.UserDefinition;
+import io.quarkus.security.jpa.Username;
 import jakarta.persistence.*;
-import org.tilenp.enums.UserRole;
 
 @Entity
 @Table(name="users")
+@UserDefinition
 public class User extends PanacheEntity {
     public String name;
+
+    @Username
+    public String username;
+
+    @Password
+    public String password;
     
-    @Enumerated(EnumType.STRING)
-    public UserRole userRole;
-    
-    public String password; //TODO: dont save plaintext passwords, lol
+    @Roles
+    public String userRole;
 }

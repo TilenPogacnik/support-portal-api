@@ -5,7 +5,7 @@ import org.tilenp.enums.ConversationTopic;
 
 public class ConversationDTO {
     public Long id;
-    public Long customerId;
+    public Long customerId; //use UserDTO instead of separate fields
     public String customerName;
     public Long operatorId;
     public String operatorName;
