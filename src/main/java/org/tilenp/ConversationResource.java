@@ -20,9 +20,7 @@ import org.tilenp.enums.UserRole;
 import org.tilenp.exception.ErrorMessages;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Path("/conversations")
@@ -116,6 +114,7 @@ public class ConversationResource {
         }
         
         return conversation.messages.stream()
+                .sorted((m1, m2) -> m1.createdAt.compareTo(m2.createdAt))
                 .map(MessageDTO::fromEntity)
                 .collect(Collectors.toList());
     }

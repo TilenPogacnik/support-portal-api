@@ -2,12 +2,12 @@ package org.tilenp.entities;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntity;
 import jakarta.persistence.*;
+import java.time.Instant;
 
 
 @Entity
 @Table(name="messages")
 public class Message extends PanacheEntity {
-    //TODO: message timestamp
     @ManyToOne
     @JoinColumn(name="conversation_id", nullable = false)
     public Conversation conversation;
@@ -18,4 +18,7 @@ public class Message extends PanacheEntity {
 
     @Column(nullable = false)
     public String text;
+    
+    @Column(name = "created_at", nullable = false, updatable = false)
+    public Instant createdAt = Instant.now();
 }

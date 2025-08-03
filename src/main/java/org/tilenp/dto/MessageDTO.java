@@ -7,14 +7,16 @@ public class MessageDTO {
     private Long conversationId;
     private UserDTO author;
     private String text;
+    private java.time.Instant createdAt;
 
     public MessageDTO() {}
 
-    public MessageDTO(Long id, Long conversationId, UserDTO author, String text) {
+    public MessageDTO(Long id, Long conversationId, UserDTO author, String text, java.time.Instant createdAt) {
         this.id = id;
         this.conversationId = conversationId;
         this.author = author;
         this.text = text;
+        this.createdAt = createdAt;
     }
 
     public static MessageDTO fromEntity(Message message) {
@@ -25,7 +27,8 @@ public class MessageDTO {
             message.id,
             message.conversation.id,
             UserDTO.fromEntity(message.author),
-            message.text
+            message.text,
+            message.createdAt
         );
     }
 
@@ -43,5 +46,9 @@ public class MessageDTO {
 
     public String getText() {
         return text;
+    }
+
+    public java.time.Instant getCreatedAt() {
+        return createdAt;
     }
 }
