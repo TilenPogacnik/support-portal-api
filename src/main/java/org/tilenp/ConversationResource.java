@@ -3,6 +3,7 @@ package org.tilenp;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import org.tilenp.dto.CloseConversationDTO;
 import org.tilenp.dto.ConversationDTO;
 import org.tilenp.dto.CreateConversationDTO;
 import org.tilenp.dto.CreateMessageDTO;
@@ -162,6 +163,40 @@ public class ConversationResource {
         return toConversationDTO(conversation);
     }
 
+    @POST
+    @Transactional
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Path("/{id}/close")
+    @Produces(MediaType.APPLICATION_JSON)
+    public ConversationDTO closeConversation(@PathParam("id") Long conversationId, CloseConversationDTO closeDTO){
+        // Validate DTO
+        validateCloseConversationDTO(closeDTO);
+        
+        // Find the conversation
+        Conversation conversation = Conversation.findById(conversationId);
+        if (conversation == null) {
+            throw new IllegalArgumentException("Conversation not found with id: " + conversationId);
+        }
+        
+        // Check if conversation is already completed
+        if (conversation.status == ConversationStatus.COMPLETED) {
+            throw new IllegalArgumentException("Conversation is already completed");
+        }
+        
+        // Find the user who is closing the conversation
+        User closingUser = User.findById(closeDTO.userId);
+        if (closingUser == null) {
+            throw new IllegalArgumentException("User not found with id: " + closeDTO.userId);
+        }
+        
+        // Close the conversation and record who closed it
+        conversation.status = ConversationStatus.COMPLETED;
+        conversation.closedBy = closingUser;
+        conversation.persist();
+        
+        return toConversationDTO(conversation);
+    }
+
     private void validateCreateConversationDTO(CreateConversationDTO dto) {
         if (dto.customerId == null) {
             throw new IllegalArgumentException("Customer ID is required");
@@ -186,6 +221,12 @@ public class ConversationResource {
     private void validateTakeoverConversationDTO(TakeoverConversationDTO dto) {
         if (dto.operatorId == null) {
             throw new IllegalArgumentException("Operator ID is required");
+        }
+    }
+
+    private void validateCloseConversationDTO(CloseConversationDTO dto) {
+        if (dto.userId == null) {
+            throw new IllegalArgumentException("User ID is required");
         }
     }
 

@@ -18,6 +18,10 @@ public class Conversation extends PanacheEntity {
     @JoinColumn(name="operator_id")
     public User operator;
 
+    @ManyToOne
+    @JoinColumn(name="closed_by_id")
+    public User closedBy;
+
     @Enumerated(EnumType.STRING)
     public ConversationTopic topic;
     

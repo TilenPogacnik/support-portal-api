@@ -24,22 +24,22 @@ VALUES (7, 'David Chen', 'OPERATOR', 'operator123');
 
 -- Sample Conversations
 -- Active conversation with operator assigned
-INSERT INTO conversations(id, customer_id, operator_id, topic, status)
-VALUES (1, 1, 5, 'TECHNICAL', 'TAKEN');
+INSERT INTO conversations(id, customer_id, operator_id, closed_by_id, topic, status)
+VALUES (1, 1, 5, NULL, 'TECHNICAL', 'TAKEN');
 
 -- Pending conversations waiting for operator
-INSERT INTO conversations(id, customer_id, operator_id, topic, status)
-VALUES (2, 2, NULL, 'SERVICES', 'WAITING');
-INSERT INTO conversations(id, customer_id, operator_id, topic, status)
-VALUES (3, 3, NULL, 'CHAT', 'WAITING');
+INSERT INTO conversations(id, customer_id, operator_id, closed_by_id, topic, status)
+VALUES (2, 2, NULL, NULL, 'SERVICES', 'WAITING');
+INSERT INTO conversations(id, customer_id, operator_id, closed_by_id, topic, status)
+VALUES (3, 3, NULL, NULL, 'CHAT', 'WAITING');
 
--- Completed conversation
-INSERT INTO conversations(id, customer_id, operator_id, topic, status)
-VALUES (4, 4, 6, 'TECHNICAL', 'COMPLETED');
+-- Completed conversation (closed by Lisa Rodriguez)
+INSERT INTO conversations(id, customer_id, operator_id, closed_by_id, topic, status)
+VALUES (4, 4, 6, 6, 'TECHNICAL', 'COMPLETED');
 
 -- Another active conversation
-INSERT INTO conversations(id, customer_id, operator_id, topic, status)
-VALUES (5, 2, 7, 'SERVICES', 'TAKEN');
+INSERT INTO conversations(id, customer_id, operator_id, closed_by_id, topic, status)
+VALUES (5, 2, 7, NULL, 'SERVICES', 'TAKEN');
 
 -- Sample Messages
 -- Messages for conversation 1 (John Smith with Alex Thompson - TECHNICAL)
