@@ -1,0 +1,82 @@
+Tech Support Application - REST API Endpoints TODO
+
+AUTHENTICATION:
+- HTTP Basic Authentication for all operator endpoints
+- Header: Authorization: Basic <base64(username:password)>
+- No authentication required for customer endpoints
+
+=== CUSTOMER ENDPOINTS (Mobile App) ===
+
+1. POST /api/conversations
+   Purpose: Create new support conversation
+   Request: { "customerName": "string", "topic": "technical|services|chat", "message": "string" }
+   Response: { "conversationId": "string", "status": "pending", "timestamp": "ISO8601" }
+
+2. GET /api/conversations/{conversationId}
+   Purpose: Get conversation details and messages
+   Response: { "conversationId": "string", "topic": "string", "status": "pending|active|closed", "messages": [...] }
+
+3. POST /api/conversations/{conversationId}/messages
+   Purpose: Customer sends message in existing conversation
+   Request: { "message": "string" }
+   Response: { "messageId": "string", "timestamp": "ISO8601" }
+
+4. GET /api/conversations/{conversationId}/messages
+   Purpose: Get all messages in conversation
+   Response: { "messages": [{ "messageId": "string", "sender": "customer|operator", "message": "string", "timestamp": "ISO8601" }] }
+
+=== OPERATOR ENDPOINTS (Web App) ===
+All require: Authorization: Basic <credentials>
+
+5. GET /api/operator/conversations
+   Purpose: Get all conversations (pending and active)
+   Query params: ?status=pending|active|all
+   Response: { "conversations": [{ "conversationId": "string", "customerName": "string", "topic": "string", "status": "string", "lastMessage": "string", "timestamp": "ISO8601", "assignedOperator": "string|null" }] }
+
+6. POST /api/operator/conversations/{conversationId}/takeover
+   Purpose: Operator takes over pending conversation
+   Response: { "success": true, "message": "Conversation assigned" }
+
+7. POST /api/operator/conversations/{conversationId}/messages
+   Purpose: Operator sends reply to customer
+   Request: { "message": "string" }
+   Response: { "messageId": "string", "timestamp": "ISO8601" }
+
+8. GET /api/operator/conversations/{conversationId}
+   Purpose: Get full conversation details for operator
+   Response: { "conversationId": "string", "customerName": "string", "topic": "string", "status": "string", "messages": [...], "assignedOperator": "string" }
+
+9. POST /api/operator/conversations/{conversationId}/close
+   Purpose: Close/resolve conversation
+   Response: { "success": true, "message": "Conversation closed" }
+
+=== STATUS/HEALTH ENDPOINTS ===
+
+10. GET /api/health
+    Purpose: API health check
+    Response: { "status": "healthy", "timestamp": "ISO8601" }
+
+=== IMPLEMENTATION NOTES ===
+
+- Conversation States: pending → active → closed
+- Topics: technical, services, chat
+- Only one operator can take over a pending conversation
+- Operators are pre-registered (no registration endpoint needed)
+- Consider WebSocket endpoints for real-time updates:
+  * /ws/customer/{conversationId} - Real-time updates for customers
+  * /ws/operator/{operatorId} - Real-time updates for operators
+
+=== DEVELOPMENT CHECKLIST ===
+[ ] Implement customer conversation creation
+[ ] Implement customer messaging
+[ ] Implement operator authentication
+[ ] Implement operator conversation listing
+[ ] Implement operator takeover functionality
+[ ] Implement operator messaging
+[ ] Implement conversation closing
+[ ] Add proper error handling and validation
+[ ] Add database schema design
+[ ] Add real-time updates (WebSocket)
+[ ] Add API documentation
+[ ] Add unit tests
+[ ] Add integration tests

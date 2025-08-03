@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Path("/hello")
-public class GreetingResource {
+public class GreetingResource { //TODO delete class
 
     @Inject
     GreetingService service;
