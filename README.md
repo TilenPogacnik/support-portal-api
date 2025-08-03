@@ -11,7 +11,9 @@ A RESTful API for a tech support portal that enables customers to create support
    ./mvnw quarkus:dev
    ```
    - The API will be available at `http://localhost:8080`
-   - A PostgreSQL database is automatically started using Quarkus Dev Services
+   
+   **Notes**:
+   - A database is automatically started using Quarkus Dev Services
    - The database is recreated on each application start (in-memory for development only)
    - For production use, configure a persistent database in `application.properties`
 
@@ -46,6 +48,8 @@ POST /conversations
 ```
 **Roles**: USER only
 
+---
+
 ### List Conversations
 ```
 GET /conversations?operatorId=1,2&topic=TECHNICAL,CHAT&status=WAITING,ACTIVE
@@ -59,17 +63,23 @@ GET /conversations?operatorId=1,2&topic=TECHNICAL,CHAT&status=WAITING,ACTIVE
 
 **Roles**: USER, OPERATOR
 
+---
+
 ### Get Conversation Details
 ```
 GET /conversations/{id}
 ```
 **Roles**: USER (own conversations only), OPERATOR
 
+---
+
 ### Get Conversation Messages
 ```
 GET /conversations/{id}/messages
 ```
 **Roles**: USER (own conversations only), OPERATOR
+
+---
 
 ### Add Message to Conversation
 ```
@@ -86,6 +96,8 @@ POST /conversations/{id}/messages
 
 **Roles**: USER (own conversations only), OPERATOR
 
+---
+
 ### Accept Conversation (Operator Only)
 ```
 POST /conversations/{id}/accept
@@ -94,6 +106,8 @@ POST /conversations/{id}/accept
 - Only conversations with status `WAITING` can be accepted
 
 **Roles**: OPERATOR only
+
+---
 
 ### Close Conversation
 ```
@@ -104,6 +118,8 @@ POST /conversations/{id}/close
 - Both operators and users can close their conversations. Users are limited to closing their own conversations. Operators can close any conversation.
 
 **Roles**: USER (own conversations), OPERATOR
+
+---
 
 ## Data Models
 
