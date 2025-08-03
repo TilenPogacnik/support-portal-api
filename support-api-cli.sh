@@ -70,13 +70,40 @@ create_conversation() {
     _make_request "$username" "$password" POST "/conversations" "$body"
 }
 
-# Get all conversations (operator only)
-# Usage: get_conversations USERNAME PASSWORD
+# Get all conversations with optional filters
+# Usage: get_conversations USERNAME PASSWORD [OPERATOR_IDS] [TOPICS] [STATUSES]
+# Example: get_conversations alice pass123 "1,2,3" "TECHNICAL,CHAT" "WAITING,ACTIVE"
 get_conversations() {
     local username=$1
     local password=$2
+    local operator_ids=${3:-}
+    local topics=${4:-}
+    local statuses=${5:-}
     
-    _make_request "$username" "$password" GET "/conversations"
+    local endpoint="/conversations"
+    local params=()
+    
+    # Add operator IDs if provided
+    if [ -n "$operator_ids" ]; then
+        params+=("operatorId=$operator_ids")
+    fi
+    
+    # Add topics if provided
+    if [ -n "$topics" ]; then
+        params+=("topic=$topics")
+    fi
+    
+    # Add statuses if provided
+    if [ -n "$statuses" ]; then
+        params+=("status=$statuses")
+    fi
+    
+    # Build the full URL with parameters
+    if [ ${#params[@]} -gt 0 ]; then
+        endpoint+="?$(IFS='&'; echo "${params[*]}")"
+    fi
+    
+    _make_request "$username" "$password" GET "$endpoint"
 }
 
 # Get a specific conversation
@@ -136,7 +163,7 @@ close_conversation() {
 
 echo "Support Portal API CLI loaded. Available functions:"
 echo "- create_conversation USERNAME PASSWORD TOPIC \"INITIAL_MESSAGE\""
-echo "- get_conversations USERNAME PASSWORD"
+echo "- get_conversations USERNAME PASSWORD [OPERATOR_IDS] [TOPICS] [STATUSES]"
 echo "- get_conversation USERNAME PASSWORD CONVERSATION_ID"
 echo "- get_conversation_messages USERNAME PASSWORD CONVERSATION_ID"
 echo "- add_message USERNAME PASSWORD CONVERSATION_ID \"MESSAGE_TEXT\""

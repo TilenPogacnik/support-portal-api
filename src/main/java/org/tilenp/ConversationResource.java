@@ -19,7 +19,10 @@ import org.tilenp.enums.ConversationStatus;
 import org.tilenp.enums.UserRole;
 import org.tilenp.exception.ErrorMessages;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Path("/conversations")
@@ -57,18 +60,20 @@ public class ConversationResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @RolesAllowed({UserRole.OPERATOR, UserRole.USER})
-    public List<ConversationDTO> getAllConversations(){ //TODO: add filters for status, operator, topic
+    public List<ConversationDTO> getAllConversations(
+            @QueryParam("operatorId") String operatorIdsParam,
+            @QueryParam("topic") String topicsParam,
+            @QueryParam("status") String statusesParam) {
+        
         User user = currentUser.get();
-        List<Conversation> conversations;
         
-        if (UserRole.USER.equals(user.userRole)) {
-            // Users can only see their own conversations
-            conversations = Conversation.list("customer", user);
-        } else {
-            // Operators can see all conversations
-            conversations = Conversation.listAll();
-        }
+        List<Long> includedOperators = operatorIdsParam != null ? Arrays.stream(operatorIdsParam.split(",")).map(Long::parseLong).collect(Collectors.toList()) : null;
+        List<String> includedTopics = topicsParam != null ? Arrays.stream(topicsParam.split(",")).map(String::toUpperCase).collect(Collectors.toList()) : null;
+        List<String> includedStatuses = statusesParam != null ? Arrays.stream(statusesParam.split(",")).map(String::toUpperCase).collect(Collectors.toList()) : null;
         
+        
+        List<Conversation> conversations = Conversation.findConversations(user, includedOperators, includedTopics, includedStatuses);
+
         return conversations.stream()
                 .map(ConversationDTO::fromEntity)
                 .collect(Collectors.toList());
@@ -119,7 +124,7 @@ public class ConversationResource {
     @Transactional
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    @Path("/{id}/messages") //TODO: cleanup order of annotations
+    @Path("/{id}/messages")
     @RolesAllowed({UserRole.OPERATOR, UserRole.USER})
     public MessageDTO addMessageToConversation(@PathParam("id") Long conversationId, CreateMessageDTO createMessageDTO) {
         User user = currentUser.get();
