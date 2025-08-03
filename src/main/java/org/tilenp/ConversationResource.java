@@ -135,6 +135,7 @@ public class ConversationResource {
         Message message = new Message();
         message.conversation = conversation;
         message.text = createMessageDTO.text();
+        message.author = user;
         message.persist();
         
         return MessageDTO.fromEntity(message);
