@@ -18,7 +18,10 @@ public class Conversation extends PanacheEntity {
     @JoinColumn(name="operator_id")
     public User operator;
 
+    @Enumerated(EnumType.STRING)
     public ConversationTopic topic;
+    
+    @Enumerated(EnumType.STRING)
     public ConversationStatus status;
 
     @OneToMany(mappedBy="conversation")

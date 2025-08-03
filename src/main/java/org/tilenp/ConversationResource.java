@@ -3,10 +3,12 @@ package org.tilenp;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import org.tilenp.dto.ConversationDTO;
 import org.tilenp.dto.CreateConversationDTO;
 import org.tilenp.entities.Conversation;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Path("/conversations")
 public class ConversationResource {
@@ -30,8 +32,19 @@ public class ConversationResource {
 
     @GET
     @Produces(MediaType.APPLICATION_JSON)
-    public List<Conversation> getAllConversations(){
-        return Conversation.listAll();
+    public List<ConversationDTO> getAllConversations(){
+        List<Conversation> conversations = Conversation.listAll();
+        return conversations.stream()
+                .map(conv -> new ConversationDTO(
+                        conv.id,
+                        conv.customer != null ? conv.customer.id : null,
+                        conv.customer != null ? conv.customer.name : null,
+                        conv.operator != null ? conv.operator.id : null,
+                        conv.operator != null ? conv.operator.name : null,
+                        conv.topic,
+                        conv.status
+                ))
+                .collect(Collectors.toList());
     }
 
     @GET

@@ -84,7 +84,4 @@ VALUES (15, 5, 7, 'Hi Sarah! I can help you with that. How much additional stora
 INSERT INTO messages(id, conversation_id, author_id, text)
 VALUES (16, 5, 2, 'I think 500GB more would be sufficient for now.');
 
--- Set sequence values to avoid conflicts
-SELECT setval('users_id_seq', 7);
-SELECT setval('conversations_id_seq', 5);
-SELECT setval('messages_id_seq', 16);
+-- Note: Sequence values are automatically managed by Hibernate (we are using H2 database for dev purposes)
